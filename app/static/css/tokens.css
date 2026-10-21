@@ -1,0 +1,175 @@
+/* ==========================================================================
+   VTU Assistant — design tokens
+   --------------------------------------------------------------------------
+   Two themes: dark (the default for a fresh session) and light. Only colours
+   differ between them; type, spacing, radii, layout metrics, and motion are
+   shared, so no component CSS in app.css needs a theme-specific variant.
+
+   Every colour below is a semantic role, not a literal. Components must read
+   these variables rather than writing colour values of their own, which is
+   what keeps the two themes in step.
+
+   Contrast note: the colours below were measured against WCAG 2.1 AA (4.5:1 for
+   normal text, 3:1 for large text and non-text UI) in both themes, and the
+   measured ratios are recorded in the implementation report. Every text pair
+   and every focus ring passes. One deliberate exception is reported rather
+   than hidden: the border colours (--border, --border-strong) sit between
+   1.1:1 and 1.6:1 against the surfaces they outline. That is a "subtle border"
+   look, so control boundaries are not identifiable by their outline alone —
+   each control carries a text label and a distinct fill as well. Whether to
+   raise the border values to 3:1 is an open design decision, not an oversight.
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces, from furthest back to furthest forward */
+  --bg:            #0d0f13;
+  --surface:       #14171c;
+  --surface-2:     #1a1e25;
+  --surface-3:     #222731;
+  --surface-sunken:#0a0c0f;
+
+  /* Lines */
+  --border:        #272c36;
+  --border-strong: #343b47;
+
+  /* Text roles */
+  --text:          #e9ecf1;  /* primary body and headings */
+  --text-2:        #b3bcc9;  /* secondary, labels */
+  --text-3:        #8d97a5;  /* muted, metadata, captions */
+
+  /* Brand accent — indigo, chosen to be distinct from common assistant
+     product palettes. Two tokens because one value cannot serve both roles:
+     --accent is dark enough to carry white text, --accent-text is light
+     enough to be readable as text on a dark surface. */
+  --accent:        #5b4bd6;
+  --accent-hover:  #6a5ae8;
+  --accent-fg:     #ffffff;
+  --accent-text:   #a99dff;
+  --accent-soft:   rgba(124, 108, 255, 0.14);
+  --accent-border: rgba(124, 108, 255, 0.40);
+
+  /* Citation highlight — amber, used for citation chips and the panel header
+     so cited sources read as highlighted research material. */
+  --cite:          #e0a94a;
+  --cite-strong:   #f0bd63;
+  --cite-soft:     rgba(224, 169, 74, 0.13);
+  --cite-border:   rgba(224, 169, 74, 0.35);
+
+  /* Feedback */
+  --danger:        #ff6b6b;
+  --danger-soft:   rgba(255, 107, 107, 0.12);
+  --danger-border: rgba(255, 107, 107, 0.40);
+  --ok:            #4ec9a0;
+
+  /* Focus is never removed; only restyled. */
+  --focus:         #a99dff;
+
+  /* Dimming layer behind an overlay surface */
+  --scrim:         rgba(0, 0, 0, 0.55);
+
+  /* Elevation */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  /* Type */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               "Liberation Mono", monospace;
+
+  --text-xs:   0.75rem;
+  --text-sm:   0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg:   1.0625rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+
+  --leading-tight: 1.3;
+  --leading-body:  1.65;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* Radii */
+  --radius-sm:   6px;
+  --radius:      10px;
+  --radius-lg:   16px;
+  --radius-pill: 999px;
+
+  /* Layout metrics */
+  --sidebar-w:   264px;
+  --panel-w:     420px;
+  --content-max: 768px;
+  --topbar-h:    56px;
+
+  /* Motion — used only where it aids comprehension (REQ UI-03). */
+  --dur: 160ms;
+  --ease: cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Light theme
+   --------------------------------------------------------------------------
+   Overrides colours only. The deeper accent and darker amber exist because a
+   value that reads well as text on a dark surface usually fails AA on a light
+   one; the roles stay identical, only the values change.
+   -------------------------------------------------------------------------- */
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg:            #f7f8fa;
+  --surface:       #ffffff;
+  --surface-2:     #f2f4f8;
+  --surface-3:     #e9ecf2;
+  --surface-sunken:#eef0f5;
+
+  --border:        #e3e6ec;
+  --border-strong: #c9cfda;
+
+  --text:          #15181d;
+  --text-2:        #4c5464;
+  --text-3:        #646d7e;
+
+  /* Hover darkens on a light surface, where it lightens on a dark one. */
+  --accent:        #5b4bd6;
+  --accent-hover:  #4a3bc0;
+  --accent-fg:     #ffffff;
+  --accent-text:   #4b3fc7;
+  --accent-soft:   rgba(91, 75, 214, 0.10);
+  --accent-border: rgba(91, 75, 214, 0.35);
+
+  --cite:          #8a5a00;
+  --cite-strong:   #6d4700;
+  --cite-soft:     rgba(224, 169, 74, 0.16);
+  --cite-border:   rgba(138, 90, 0, 0.30);
+
+  --danger:        #b3261e;
+  --danger-soft:   rgba(179, 38, 30, 0.08);
+  --danger-border: rgba(179, 38, 30, 0.30);
+  --ok:            #1f7a55;
+
+  --focus:         #4b3fc7;
+
+  --scrim:         rgba(20, 23, 28, 0.45);
+
+  --shadow-1: 0 1px 2px rgba(16, 20, 28, 0.06);
+  --shadow-2: 0 8px 24px rgba(16, 20, 28, 0.12);
+}
+
+/* Respect the operating-system preference. GSAP and decorative animation are
+   out of scope, but a transition that ignores this preference would be an
+   accessibility defect, so it is handled here. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur: 0ms;
+  }
+}

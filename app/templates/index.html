@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VTU Assistant — academic answers with cited sources</title>
+  <meta name="description" content="An unofficial academic assistant that answers from indexed university documents and cites the original page for every claim.">
+  <link rel="stylesheet" href="../static/css/tokens.css">
+  <link rel="stylesheet" href="../static/css/app.css">
+</head>
+<body>
+  <!-- NFR-A11Y-01: the core flow is reachable without a pointer. -->
+  <a class="skip-link" href="#composer-input">Skip to the question box</a>
+
+  <div class="app" id="app">
+
+    <!-- ==================================================================
+         Sidebar
+         ================================================================== -->
+    <aside class="sidebar" id="sidebar" aria-label="Workspace and academic context">
+      <div class="brand">
+        <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <rect x="4" y="3" width="17" height="24" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M9 10h7M9 15h7M9 20h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <rect x="19" y="17" width="9" height="6.5" rx="2" fill="currentColor"/>
+        </svg>
+        <span class="brand__name">
+          VTU Assistant
+          <span class="brand__tagline">Cited academic answers</span>
+        </span>
+      </div>
+
+      <button class="btn btn--primary btn--full" type="button" id="new-chat-btn">
+        <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+        </svg>
+        New chat
+      </button>
+
+      <section aria-labelledby="context-heading">
+        <h2 class="sidebar__section-title" id="context-heading">Academic context</h2>
+        <!-- Options are populated from data (mock-data.js), never hard-coded
+             here, so the same markup serves fixtures now and the API later. -->
+        <form class="context-form" id="context-form">
+          <div class="field">
+            <label class="field__label" for="ctx-scheme">Scheme</label>
+            <select class="field__input" id="ctx-scheme" name="scheme"></select>
+          </div>
+          <div class="field">
+            <label class="field__label" for="ctx-branch">Branch</label>
+            <select class="field__input" id="ctx-branch" name="branch"></select>
+          </div>
+          <div class="field">
+            <label class="field__label" for="ctx-semester">Semester</label>
+            <select class="field__input" id="ctx-semester" name="semester"></select>
+          </div>
+        </form>
+      </section>
+
+      <div class="sidebar__footer">
+        <p>Unofficial student tool. Not affiliated with or endorsed by VTU. The official document remains authoritative.</p>
+      </div>
+    </aside>
+
+    <!-- ==================================================================
+         Main column
+         ================================================================== -->
+    <div class="main">
+      <div class="topbar">
+        <button class="btn btn--icon" type="button" id="sidebar-toggle"
+                aria-expanded="true" aria-controls="sidebar" aria-label="Toggle sidebar">
+          <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M2 4h12M2 8h12M2 12h12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <h1 class="visually-hidden">VTU Assistant</h1>
+
+        <div class="topbar__context">
+          <!-- Always-visible active context (FR-CTX-01 / UI-02). -->
+          <button class="context-summary" type="button" id="context-summary"
+                  aria-describedby="context-summary-hint">
+            <span class="context-summary__dot" aria-hidden="true"></span>
+            <span class="context-summary__text" id="context-summary-text">No context selected</span>
+          </button>
+          <span class="visually-hidden" id="context-summary-hint">
+            Shows the academic context currently applied to answers. Activate to change it.
+          </span>
+        </div>
+
+        <!-- Theme toggle. The accessible name states the action rather than the
+             current state, so it is never ambiguous; app.js updates it when the
+             theme changes. Both icons are inline SVG, so no icon dependency is
+             added. Dark is the default (set on <html>), so the sun — the action
+             "go to light" — is the one shown initially. -->
+        <button class="btn btn--icon" type="button" id="theme-toggle"
+                aria-label="Switch to light mode">
+          <svg class="btn__icon" id="theme-icon-sun" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <circle cx="8" cy="8" r="3.25" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M8 1v1.7M8 13.3V15M1 8h1.7M13.3 8H15M3.05 3.05l1.2 1.2M11.75 11.75l1.2 1.2M12.95 3.05l-1.2 1.2M4.25 11.75l-1.2 1.2"
+                  fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <svg class="btn__icon" id="theme-icon-moon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" hidden>
+            <path d="M13.5 9.9A5.75 5.75 0 0 1 6.1 2.5a5.75 5.75 0 1 0 7.4 7.4z"
+                  fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <main class="conversation" id="conversation" tabindex="-1">
+        <div class="conversation__inner">
+
+          <!-- Rendered conversation, shown in the answered state. -->
+          <div id="message-list"></div>
+
+          <!-- ---------- State: empty ---------- -->
+          <section class="state state--centered" id="state-empty" aria-labelledby="empty-title">
+            <h2 class="state__title" id="empty-title">Ask about your syllabus</h2>
+            <p class="state__lead">
+              Answers are taken only from indexed university documents, and every
+              factual claim shows the document and original PDF page behind it.
+            </p>
+            <div class="prompt-grid" id="prompt-grid"></div>
+          </section>
+
+          <!-- ---------- State: loading ---------- -->
+          <section class="state" id="state-loading" aria-labelledby="loading-title" hidden>
+            <h2 class="visually-hidden" id="loading-title">Searching indexed documents</h2>
+            <div class="loading">
+              <p class="loading__status">
+                <span class="context-summary__dot" aria-hidden="true"></span>
+                Searching indexed documents for the selected context…
+              </p>
+              <div class="skeleton skeleton--wide"></div>
+              <div class="skeleton skeleton--mid"></div>
+              <div class="skeleton skeleton--short"></div>
+            </div>
+          </section>
+
+          <!-- ---------- State: error ---------- -->
+          <section class="state" id="state-error" aria-labelledby="error-title" hidden>
+            <div class="notice notice--error" role="group" aria-labelledby="error-title">
+              <svg class="notice__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.75"/>
+                <path d="M10 6v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                <circle cx="10" cy="14" r="1" fill="currentColor"/>
+              </svg>
+              <div>
+                <h2 class="notice__title" id="error-title">The request could not be completed</h2>
+                <p class="notice__body" id="error-body">
+                  Something went wrong while preparing the answer. Your question has
+                  not been answered, and no answer has been guessed in its place.
+                </p>
+                <div class="state__actions" style="justify-content: flex-start;">
+                  <button class="btn" type="button" id="error-retry">Try again</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ---------- State: missing context ---------- -->
+          <section class="state" id="state-missing-context" aria-labelledby="context-missing-title" hidden>
+            <div class="notice notice--context" role="group" aria-labelledby="context-missing-title">
+              <svg class="notice__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.75"/>
+                <path d="M10 9v5M10 6.5v.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+              </svg>
+              <div>
+                <h2 class="notice__title" id="context-missing-title">Which context should this answer use?</h2>
+                <p class="notice__body">
+                  The answer could differ between schemes, branches, and semesters, so
+                  the assistant will not guess. Choose a value and the question will
+                  be asked again with that context.
+                </p>
+                <!-- Filled by app.js with the specific fields that are unset. -->
+                <p class="notice__body" id="context-missing-fields" hidden></p>
+                <div class="state__actions" style="justify-content: flex-start;">
+                  <button class="btn btn--primary" type="button" id="context-missing-open">
+                    Choose academic context
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ---------- State: no evidence ---------- -->
+          <section class="state" id="state-no-evidence" aria-labelledby="no-evidence-title" hidden>
+            <div class="notice notice--no-evidence" role="group" aria-labelledby="no-evidence-title">
+              <svg class="notice__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <path d="M5 3h7l3 3v11H5z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+                <path d="M8 11h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+              </svg>
+              <div>
+                <h2 class="notice__title" id="no-evidence-title">Not available in the indexed material</h2>
+                <p class="notice__body" id="no-evidence-body">
+                  Nothing in the documents indexed for the selected context answers
+                  this question. Rather than guess, the assistant has not answered it.
+                </p>
+                <div class="notice__suggestions">
+                  <p>Things that may help:</p>
+                  <ul>
+                    <li>Check the scheme, branch, and semester match the question.</li>
+                    <li>Rephrase using terms that appear in the syllabus or regulation.</li>
+                    <li>Name the subject or module if you know it.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+
+      <form class="composer" id="composer">
+        <div class="composer__inner">
+          <label class="visually-hidden" for="composer-input">Ask a question about your syllabus</label>
+          <textarea class="composer__input" id="composer-input" name="question" rows="1"
+                    placeholder="Ask about a module, credit, or regulation…"></textarea>
+          <button class="btn btn--primary composer__send" type="submit" id="composer-send"
+                  aria-label="Send question">
+            <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <path d="M8 13V4M4 8l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.75"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <p class="composer__hint">Enter sends. Shift+Enter adds a new line. Answers cite the original PDF page.</p>
+      </form>
+    </div>
+
+    <!-- ==================================================================
+         Citation side panel
+         ================================================================== -->
+    <aside class="citation-panel" id="citation-panel" hidden
+           aria-labelledby="citation-panel-title"
+           aria-label="Cited source">
+      <div class="citation-panel__header">
+        <div class="citation-panel__heading">
+          <h2 class="citation-panel__title" id="citation-panel-title">Source</h2>
+          <p class="citation-panel__meta" id="citation-panel-meta"></p>
+        </div>
+        <button class="btn btn--icon" type="button" id="citation-panel-close"
+                aria-label="Close source panel">
+          <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="citation-panel__viewer" id="citation-panel-viewer">
+        <!-- Shown when no in-app preview can be produced for the citation.
+             app.js toggles this and fills the fields below; an embedded iframe
+             is added next to it only when a source URL actually exists. The
+             citation above stays complete either way, so a failed preview can
+             never turn into a citation that points nowhere. -->
+        <div class="viewer-placeholder" id="citation-unavailable" hidden>
+          <svg class="viewer-placeholder__icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <path d="M8 4h12l6 6v18H8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M20 4v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M13 18h7M13 23h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <h3 class="viewer-placeholder__title" id="citation-unavailable-title">
+            No in-app preview for this source
+          </h3>
+          <p class="viewer-placeholder__body">
+            The citation above is still complete: it names the document, its version,
+            and the original PDF page. Nothing has been substituted for the missing
+            preview.
+          </p>
+          <div class="viewer-placeholder__meta">
+            <dl>
+              <dt>Document</dt>
+              <dd id="citation-fallback-document"></dd>
+              <dt>Version</dt>
+              <dd id="citation-fallback-version"></dd>
+              <dt>Type</dt>
+              <dd id="citation-fallback-type"></dd>
+              <dt>Context</dt>
+              <dd id="citation-fallback-context"></dd>
+              <dt>Page</dt>
+              <dd id="citation-fallback-page"></dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      <div class="citation-panel__footer" id="citation-panel-footer" hidden>
+        <!-- href is added by app.js only when a real source URL exists, so this
+             link can never point at a placeholder destination. -->
+        <a class="btn" id="citation-open-source" target="_blank" rel="noopener noreferrer">
+          <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M7 3H3v10h10V9" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            <path d="M9.5 2.5H13.5V6.5M13.5 2.5L7.5 8.5" fill="none" stroke="currentColor" stroke-width="1.75"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Open at official source
+        </a>
+        <!-- Shown only when a page fragment was appended to a real source URL.
+             Whether the embedded viewer honours that fragment depends on the
+             server, so the app says so rather than promising a jump. -->
+        <p class="citation-panel__note" id="citation-page-note" hidden></p>
+      </div>
+    </aside>
+
+    <!-- Closes the off-canvas drawer or the mobile sheet. -->
+    <button class="scrim" id="scrim" type="button" aria-label="Close panel" hidden></button>
+
+    <!-- Announces state changes for assistive technology (NFR-A11Y-04). -->
+    <p class="visually-hidden" id="live-region" role="status" aria-live="polite"></p>
+  </div>
+
+  <!-- ====================================================================
+       Templates
+       All rendered markup lives here and is filled with textContent by
+       app.js. Nothing is assembled as an HTML string, so model output can
+       never be interpreted as markup (NFR-SEC-03).
+       ==================================================================== -->
+
+  <template id="tpl-message">
+    <article class="message">
+      <p class="message__role"></p>
+      <div class="message__body"></div>
+    </article>
+  </template>
+
+  <template id="tpl-citation-chip">
+    <li>
+      <button class="citation-chip" type="button">
+        <span class="citation-chip__doc"></span>
+        <span class="citation-chip__page"></span>
+      </button>
+    </li>
+  </template>
+
+  <template id="tpl-citation-ref">
+    <button class="citation-ref" type="button"></button>
+  </template>
+
+  <template id="tpl-prompt-card">
+    <button class="prompt-card" type="button">
+      <span class="prompt-card__label"></span>
+      <span class="prompt-card__meta"></span>
+    </button>
+  </template>
+
+  <!-- Load order matters: fixtures, then the data seam, then the interface. -->
+  <script src="../static/js/mock-data.js"></script>
+  <script src="../static/js/api.js"></script>
+  <script src="../static/js/app.js"></script>
+</body>
+</html>
