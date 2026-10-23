@@ -3,12 +3,19 @@
 > **Purpose:** The single source of truth for the VTU Assistant project.
 > Read this file at the start of a new AI coding session before doing
 > project work. Update it after each completed task. **Last updated:**
-> 2026-10-21 **Status:** Planning, plus the frontend shell implemented.
-> `REQUIREMENTS.md` exists as an unapproved draft (`draft-01`). The
-> shell is static files running on fixture data, now with dark and light
-> themes, the five interface states, table rendering, and the citation
-> side panel. There is no backend, no ingestion, and no real document
-> yet.
+> 2026-10-23 **Status:** Phase 2 --- the PDF extraction foundation is
+> implemented and its tests pass. `REQUIREMENTS.md` is frozen as
+> `draft-02`, and the user has explicitly approved that draft for
+> implementation — recorded here only. The document's own approval
+> record still reads `DRAFT — NOT APPROVED` and no signature has been
+> written. The frontend shell is static files running on fixture data,
+> with dark and light themes, the five interface states, table
+> rendering, and the citation side panel. `app/ingestion/pdf_extract.py`
+> extracts text page by page with original page provenance and a
+> four-way page outcome; its 17 tests run and pass in a project-local
+> `.venv` (PyMuPDF 2.0). Extraction is proven only against locally
+> generated fixtures — **no real PDF has been ingested**. There is no
+> backend, no chunking, no embeddings, and no real document yet.
 
 ## 1. Product vision
 
@@ -237,13 +244,13 @@ before accepting it. Use Git commits as an additional history/backup.
     provenance as a major gap to avoid.
 -   [x] Established incremental, test-driven workflow and this
     project-context file.
--   [x] Wrote an unapproved requirements draft (`REQUIREMENTS.md`,
-    revision `draft-01`) covering problem and users, MVP scope and
-    deferrals, functional and non-functional requirements,
+-   [x] Wrote the first requirements draft (`REQUIREMENTS.md`, revision
+    `draft-01`) covering problem and users, MVP scope and deferrals,
+    functional and non-functional requirements,
     scheme/missing-context behaviour, ingestion and page-citation
     requirements, retrieval and refusal behaviour, source policy,
-    acceptance criteria, and the interface. **Not approved**, and seven
-    review revisions are proposed but not yet written into it.
+    acceptance criteria, and the interface. Superseded by `draft-02`
+    (see below).
 -   [x] Confirmed the duplicate retrieval defect in the reference
     project's `pipeline.py` by static source inspection.
 -   [x] Implemented the step-1 frontend shell as static files:
@@ -309,11 +316,80 @@ before accepting it. Use Git commits as an additional history/backup.
     `https://github.com/AbhishekNasalapure-1008/Acadexa-VTU-assistant`.
     The branch is `main` and tracks `origin/main`. Git had not been
     initialized before this; no code changed in this step.
+-   [x] Revised and froze `REQUIREMENTS.md` as `draft-02`, applying nine
+    review corrections: logical document identity versus file version,
+    PDF page classification, the AC-04 retrieval criterion, context
+    resolution, citation fallback, retrieved-text security, the
+    public-release gate, citation version integrity, and ingestion
+    consistency and recovery. Committed as `a89465e`. The document's own
+    approval record was deliberately left as `DRAFT — NOT APPROVED`; no
+    signature was written.
+-   [x] Recorded that the user **explicitly approved `REQUIREMENTS.md`
+    `draft-02` for implementation**. This approval is recorded in this
+    file only. It is deliberately *not* written into `REQUIREMENTS.md`,
+    whose Section 12 approval record still reads `DRAFT — NOT APPROVED`;
+    editing the document or simulating a signature was out of scope.
+-   [x] Implemented the PDF extraction foundation as
+    `app/ingestion/pdf_extract.py`, with `app/__init__.py` and
+    `app/ingestion/__init__.py` added so both are importable packages.
+    It opens one local PDF with PyMuPDF, extracts text page by page
+    while preserving each page's original one-based PDF page number, and
+    classifies every page as exactly one of `text`, `blank`,
+    `image-only`, or `extraction failure` (FR-ING-01, FR-ING-05;
+    ING-01/04/05/06). Missing paths, non-file paths, unreadable files,
+    encrypted documents, and malformed or unparsable PDFs raise
+    `PdfExtractionError` with a message naming the problem, instead of
+    returning an empty successful result. It contains no chunking,
+    embedding, FAISS, Gemini, Flask, or OCR code, and it invents no
+    document metadata (no title, source URL, or effective date).
+-   [x] Wrote focused tests in `tests/test_pdf_extract.py` plus a
+    `tests/__init__.py` package marker. They use the standard-library
+    `unittest` runner, so no new test dependency was added, and they
+    build every fixture locally in a temporary directory with PyMuPDF.
+    No document was downloaded and no VTU syllabus content was invented.
+-   [x] Created a project-local virtual environment (`.venv`, Python
+    3.12.7) and a `.gitignore` (expanded in the Git-hygiene pass
+    below). PyMuPDF was installed **into `.venv` only**; the global
+    interpreter was not modified and neither pytest nor any other
+    package was installed.
+    `pip` reported the packages as already present in `.venv`, so this
+    step resolved to a no-op install of PyMuPDF 2.0.
+-   [x] **Ran the extraction tests for real and they pass.**
+    `.\.venv\Scripts\python.exe -m unittest discover -s tests -t . -v`
+    reports `Ran 17 tests ... OK` — 17 executed, 17 passed, 0 failed, 0
+    skipped. The suite covers multi-page text with one-based page
+    numbers, a genuinely blank page, an image-only page, a page-level
+    PyMuPDF error, and missing, directory, malformed, empty, and
+    encrypted file inputs.
+-   [x] Fixed one defect the real run exposed: the image-only fixture
+    used `Pixmap.samples`, which is read-only in PyMuPDF 2.0 and raised
+    `AttributeError`. It now uses `Pixmap.set_rect`. Added an encrypted-
+    PDF test (verified `needs_pass` on the fixture before asserting) and
+    a page-level extraction-failure test, so the failure path is
+    exercised on a genuine PyMuPDF error rather than only through the
+    classifier.
+-   [x] Reviewed Git hygiene before the first backend commit.
+    `.gitignore` now covers virtual environments (`.venv/`, `venv/`,
+    `env/`), generated files (`__pycache__/`, `*.py[cod]`, `*.pyo`),
+    environment and secret files (`.env`, `.env.*`, with `.env.example`
+    re-included by negation), and tool caches (`.pytest_cache/`,
+    `.mypy_cache/`, `.coverage`, `htmlcov/`). `git check-ignore` confirmed
+    that no source file, test, `PROJECT_CONTEXT.md`, or `REQUIREMENTS.md`
+    is ignored. No `.env` file exists anywhere in the tree and no secret
+    is tracked or staged; no credential value was printed or written into
+    the repository.
 
 ### Not yet completed / not verified
 
--   [ ] Requirements document and acceptance criteria approved
-    (`REQUIREMENTS.md` on disk is still `draft-01`).
+-   [ ] `REQUIREMENTS.md` approved **in the document itself**. It is
+    frozen as `draft-02` and the user has approved that draft for
+    implementation, but Section 12 still reads
+    `DRAFT — NOT APPROVED` and is unsigned.
+-   [ ] **PDF extraction validated against a real document.** The module
+    now passes its 17 tests, but every fixture is generated locally by
+    PyMuPDF. No lawfully sourced VTU PDF has been opened, so AC-01,
+    AC-02 and AC-15 are **not** satisfied and PDF ingestion is **not**
+    complete.
 -   [ ] UI design brief/design tokens approved (they exist but have not
     been reviewed or approved).
 -   [ ] Step-1 interface reviewed on real devices and browsers. Token
@@ -327,10 +403,18 @@ before accepting it. Use Git commits as an additional history/backup.
 -   [ ] Border contrast decision. `--border` and `--border-strong` are
     below the 3:1 non-text threshold; raising them would change the
     intended "subtle border" look and needs a decision.
--   [ ] Python virtual environment and dependencies set up.
+-   [ ] Dependencies pinned in a dependency file. `.venv` exists but
+    there is still no `requirements.txt` (or equivalent), so PyMuPDF
+    `2.0` and its transitive packages (which include `numpy`,
+    `onnxruntime`, `pymupdf4llm`, and `pymupdf-layout`) are recorded
+    only in this file. None of those extras is imported by the
+    extraction module, and no OCR code was added.
 -   [ ] Official VTU source PDFs collected and their permissions/source
     recorded.
 -   [ ] PDF ingestion and page-aware chunking implemented and tested.
+    The extraction foundation exists and its 17 tests pass; chunking has
+    not been started and no real PDF has been ingested. PDF ingestion is
+    **not** complete and does not satisfy AC-01, AC-02 or AC-15.
 -   [ ] Metadata persistence implemented.
 -   [ ] FAISS indexing and stable ID mapping implemented.
 -   [ ] Retrieval baseline and evaluation dataset created.
@@ -342,54 +426,57 @@ before accepting it. Use Git commits as an additional history/backup.
 
 ## 9. Current state / next task
 
-**Current phase:** Phase 1 --- planning, with the frontend shell
-implemented.
-**Implementation status:** The frontend shell is implemented as static
-files and runs against fixture data (`app/static/js/mock-data.js`). It
-has dark and light themes, the five interface states, marked-up tables,
-and the citation side panel with an honest preview-unavailable fallback.
-It is not connected to a backend, has not been reviewed or approved, and
-contains no university content. No ingestion, embedding, retrieval, or
-generation code exists, and no real PDF has been handled yet.
-**Verified this session:** the checks listed under Completed ---
-`node --check` on the three JavaScript files, element-id consistency
-between `app.js` and `index.html`, CSS variable resolution, absence of
-literal colours in `app.css`, absence of external requests, secrets, and
-browser storage, data-seam completeness, absence of `innerHTML`/`eval`,
-serving of all six files over a local HTTP server, a clean page load in a
-browser preview, and measured WCAG contrast ratios for every token pair
-in both themes. Interactive behaviour (theme toggle, sidebar drawer,
-composer keys, state transitions, citations, panel) was **not** executed
-by a person, and screen-reader behaviour was **not** checked. Nothing has
-been run against a real document.
-**Next task:** Review the running shell against the manual checklist and
-settle the open decisions below. Then build the PDF ingestion and
-provenance pipeline, and do not connect anything to the network before
-that pipeline has been tested on a few representative, lawfully sourced
-documents.
+**Current phase:** Phase 2 --- the PDF extraction foundation is
+implemented and verified against local fixtures. Requirements are frozen
+as `draft-02` and approved by the user for implementation.
+**Implementation status:** There are now two independent pieces of work.
+(1) The frontend shell is static files running on fixture data
+(`app/static/js/mock-data.js`), with dark and light themes, the five
+interface states, marked-up tables, and the citation side panel with an
+honest preview-unavailable fallback. It is not connected to a backend.
+(2) The backend is one module, `app/ingestion/pdf_extract.py`, which
+extracts text from a local PDF page by page, keeps each page's original
+one-based number, and classifies each page as `text`, `blank`,
+`image-only`, or `extraction failure`. It has no chunking, embedding,
+FAISS, Gemini, Flask, or OCR code. There is no backend server, no
+metadata persistence, and no real PDF has been handled yet.
+**Verified this session:** `.\.venv\Scripts\python.exe -m unittest
+discover -s tests -t . -v` ran **17 tests**: **17 passed, 0 failed, 0
+skipped**. One real defect was found and fixed (the image-only fixture
+used `Pixmap.samples`, read-only in PyMuPDF 2.0). A page-level PyMuPDF
+error and an encrypted PDF are now covered by executed tests. The
+frontend checks listed under Completed were verified in earlier sessions
+and were not re-run here.
+**Next task:** Validate extraction against a small set of lawfully
+sourced VTU PDFs — checking original one-based page numbers against the
+source and recording how real blank, image-only, and failing pages are
+classified. Then implement page-aware chunking and metadata persistence,
+and pin dependencies in a dependency file. Do not connect anything to
+the network before the ingestion and provenance pipeline has been tested
+on a few representative, lawfully sourced documents.
 
 **Open decisions**
 
+-   **What the extraction tests do not prove.** Every fixture is
+    generated locally by PyMuPDF, so real-world PDFs (producer quirks,
+    filled forms, unusual encodings, true scans) are untested. The
+    blank-versus-image-only rule also still rests on PyMuPDF reporting
+    image content; a page whose only content is vector drawing is
+    reported `blank` and that remains a stated limitation.
 -   **How a cited PDF page is shown.** The approved stack contains no
     PDF renderer. The side panel currently embeds the browser's own PDF
     viewer in an iframe, and JavaScript cannot detect a host that
     refuses framing (`X-Frame-Options`), so a blocked embed would appear
     as a blank panel. Unresolved; the fallback path is what works today.
--   **Whether the seven requirements revisions are applied.** Logical
-    document identity versus file version/content hash, page
-    classification (blank versus image-only versus extraction failure),
-    relaxing AC-04 to recall within an agreed retrieval range, FR-CTX-03
-    reconciled with Section 5.2, citation fallback behaviour, retrieved
-    document text treated as untrusted evidence, and the public-release
-    gate. Proposed, not written into `REQUIREMENTS.md`.
--   **Fixture content and naming.** Every fixture `source_url` is null
-    and every fixture title says it is a placeholder, so inventing VTU
-    content is avoided. Only the unavailable-preview path can be
-    exercised until a real document exists.
--   **Whether `REQUIREMENTS.md` needs a new revision marker.** Two rows
-    were edited while the header still says `draft-01`. Bumping the
-    revision is an approval decision, so it was left alone; the
-    alternative is that a changed draft keeps its old revision label.
+-   **Whether `REQUIREMENTS.md` should record the approval.** The user
+    has approved `draft-02` for implementation, but Section 12 still
+    reads `DRAFT — NOT APPROVED` and is unsigned. Deliberately left
+    untouched here, because editing that document was out of scope and a
+    signature must not be simulated.
+-   **Fixture content and naming.** Every frontend fixture `source_url`
+    is null and every fixture title says it is a placeholder, so
+    inventing VTU content is avoided. Only the unavailable-preview path
+    can be exercised until a real document exists.
 -   **Whether the theme choice is remembered.** The toggle works, but the
     selection is forgotten on reload because persisting it would need
     browser storage, which the requirements do not currently authorise.
