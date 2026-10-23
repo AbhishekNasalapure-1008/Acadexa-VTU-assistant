@@ -304,6 +304,11 @@ before accepting it. Use Git commits as an additional history/backup.
     document's approval status (`DRAFT — awaiting review`) and its
     revision marker (`draft-01`) were deliberately left unchanged, so
     the edit does not imply an approved revision.
+-   [x] Initialized Git and pushed the initial commit (`6e0d8a1`,
+    8 files) to
+    `https://github.com/AbhishekNasalapure-1008/Acadexa-VTU-assistant`.
+    The branch is `main` and tracks `origin/main`. Git had not been
+    initialized before this; no code changed in this step.
 
 ### Not yet completed / not verified
 
@@ -322,7 +327,6 @@ before accepting it. Use Git commits as an additional history/backup.
 -   [ ] Border contrast decision. `--border` and `--border-strong` are
     below the 3:1 non-text threshold; raising them would change the
     intended "subtle border" look and needs a decision.
--   [ ] Project folder/repository initialized.
 -   [ ] Python virtual environment and dependencies set up.
 -   [ ] Official VTU source PDFs collected and their permissions/source
     recorded.
@@ -386,7 +390,6 @@ documents.
     were edited while the header still says `draft-01`. Bumping the
     revision is an approval decision, so it was left alone; the
     alternative is that a changed draft keeps its old revision label.
--   **Repository initialization.** Git has not been initialized.
 -   **Whether the theme choice is remembered.** The toggle works, but the
     selection is forgotten on reload because persisting it would need
     browser storage, which the requirements do not currently authorise.
