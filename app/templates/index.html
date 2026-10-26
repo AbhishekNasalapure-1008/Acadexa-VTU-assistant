@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VTU Assistant — academic answers with cited sources</title>
-  <meta name="description" content="An unofficial academic assistant that answers from indexed university documents and cites the original page for every claim.">
+  <title>Acadexa — VTU Assistant</title>
+  <meta name="description" content="Acadexa is an unofficial VTU academic assistant that answers from indexed university documents and cites the original page for every claim.">
   <link rel="stylesheet" href="../static/css/tokens.css">
   <link rel="stylesheet" href="../static/css/app.css">
 </head>
@@ -19,46 +19,137 @@
          ================================================================== -->
     <aside class="sidebar" id="sidebar" aria-label="Workspace and academic context">
       <div class="brand">
-        <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-          <rect x="4" y="3" width="17" height="24" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
-          <path d="M9 10h7M9 15h7M9 20h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <rect x="19" y="17" width="9" height="6.5" rx="2" fill="currentColor"/>
-        </svg>
-        <span class="brand__name">
-          VTU Assistant
-          <span class="brand__tagline">Cited academic answers</span>
+        <span class="brand__mark-wrap">
+          <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <rect x="4" y="3" width="17" height="24" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M9 10h7M9 15h7M9 20h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <rect x="19" y="17" width="9" height="6.5" rx="2" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="brand__text">
+          <span class="brand__name">Acadexa</span>
+          <span class="brand__tagline">VTU Assistant</span>
         </span>
       </div>
 
-      <button class="btn btn--primary btn--full" type="button" id="new-chat-btn">
+      <button class="btn btn--primary btn--full btn--lg" type="button" id="new-chat-btn">
         <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+          <path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         New chat
       </button>
 
-      <section aria-labelledby="context-heading">
-        <h2 class="sidebar__section-title" id="context-heading">Academic context</h2>
-        <!-- Options are populated from data (mock-data.js), never hard-coded
-             here, so the same markup serves fixtures now and the API later. -->
-        <form class="context-form" id="context-form">
-          <div class="field">
-            <label class="field__label" for="ctx-scheme">Scheme</label>
-            <select class="field__input" id="ctx-scheme" name="scheme"></select>
-          </div>
-          <div class="field">
-            <label class="field__label" for="ctx-branch">Branch</label>
-            <select class="field__input" id="ctx-branch" name="branch"></select>
-          </div>
-          <div class="field">
-            <label class="field__label" for="ctx-semester">Semester</label>
-            <select class="field__input" id="ctx-semester" name="semester"></select>
-          </div>
-        </form>
-      </section>
+      <!-- Section navigation. Chat is the working workspace; Syllabus and
+           Circulars are honest placeholders because no document is indexed
+           yet. Selecting a section never pretends to search real documents. -->
+      <nav class="nav" id="primary-nav" aria-label="Sections">
+        <ul class="nav__list">
+          <li>
+            <button class="nav__item is-active" type="button" id="nav-chat"
+                    data-view="chat" aria-current="page">
+              <svg class="nav__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="M13.25 10a1.5 1.5 0 0 1-1.5 1.5H6.25L2.75 14V4.5A1.5 1.5 0 0 1 4.25 3h7.5a1.5 1.5 0 0 1 1.5 1.5z"
+                      fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              </svg>
+              <span class="nav__label">Chat</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav__item" type="button" id="nav-syllabus" data-view="syllabus">
+              <svg class="nav__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="M8 4.4C7 3.5 5.7 3 4.2 3H2.5v9h1.7c1.5 0 2.8.5 3.8 1.4"
+                      fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M8 4.4C9 3.5 10.3 3 11.8 3h1.7v9h-1.7c-1.5 0-2.8.5-3.8 1.4"
+                      fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M8 4.4v9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              <span class="nav__label">Syllabus</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav__item" type="button" id="nav-circulars" data-view="circulars">
+              <svg class="nav__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="M4 2.75h5L12.25 6v7.25H4z" fill="none" stroke="currentColor"
+                      stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M8.75 2.75V6h3.25" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M6 8.5h4.25M6 11h2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              <span class="nav__label">Circulars</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar__scroll">
+        <!-- Recent questions asked in this session. This is real session state,
+             not invented history: nothing is remembered between sessions. -->
+        <section class="sidebar__section" aria-labelledby="recent-heading">
+          <h2 class="sidebar__section-title" id="recent-heading">Recent</h2>
+          <ul class="recent" id="recent-list"></ul>
+          <p class="recent__empty" id="recent-empty">
+            Questions you ask appear here. Nothing is kept between sessions.
+          </p>
+        </section>
+
+        <section class="sidebar__section" aria-labelledby="context-heading">
+          <h2 class="sidebar__section-title" id="context-heading">Academic context</h2>
+          <!-- Options are populated from data (mock-data.js), never hard-coded
+               here, so the same markup serves fixtures now and the API later. -->
+          <form class="context-form" id="context-form">
+            <div class="field">
+              <label class="field__label" for="ctx-scheme">Scheme</label>
+              <select class="field__input" id="ctx-scheme" name="scheme"></select>
+            </div>
+            <div class="field">
+              <label class="field__label" for="ctx-branch">Branch</label>
+              <select class="field__input" id="ctx-branch" name="branch"></select>
+            </div>
+            <div class="field">
+              <label class="field__label" for="ctx-semester">Semester</label>
+              <select class="field__input" id="ctx-semester" name="semester"></select>
+            </div>
+          </form>
+        </section>
+      </div>
 
       <div class="sidebar__footer">
-        <p>Unofficial student tool. Not affiliated with or endorsed by VTU. The official document remains authoritative.</p>
+        <!-- Disclosure, not a modal dialog: the panel expands in place above
+             nothing and never traps focus, so the drawer stays usable on a
+             phone. Everything in it is a statement of fact about this build. -->
+        <button class="profile" type="button" id="profile-btn"
+                aria-expanded="false" aria-controls="profile-popover">
+          <span class="profile__avatar" aria-hidden="true">GS</span>
+          <span class="profile__text">
+            <span class="profile__name">Guest student</span>
+            <span class="profile__meta">Preview build</span>
+          </span>
+          <svg class="profile__chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M4.5 6.5L8 10l3.5-3.5" fill="none" stroke="currentColor"
+                  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <section class="popover" id="profile-popover" aria-labelledby="profile-popover-title" hidden>
+          <div class="popover__header">
+            <h2 class="popover__title" id="profile-popover-title">About this build</h2>
+          </div>
+          <dl class="popover__status">
+            <dt>Data source</dt>
+            <dd>Interface fixtures — not a dataset</dd>
+            <dt>Indexed documents</dt>
+            <dd>None</dd>
+            <dt>Answers</dt>
+            <dd>Placeholder text</dd>
+            <dt>Theme</dt>
+            <dd id="popover-theme-state">Dark</dd>
+          </dl>
+          <button class="btn btn--full" type="button" id="profile-clear">Clear conversation</button>
+        </section>
+
+        <p class="sidebar__disclaimer">
+          Unofficial student tool. Not affiliated with or endorsed by VTU. The
+          official document remains authoritative.
+        </p>
       </div>
     </aside>
 
@@ -70,11 +161,12 @@
         <button class="btn btn--icon" type="button" id="sidebar-toggle"
                 aria-expanded="true" aria-controls="sidebar" aria-label="Toggle sidebar">
           <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M2 4h12M2 8h12M2 12h12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            <path d="M2 4h12M2 8h12M2 12h12" fill="none" stroke="currentColor"
+                  stroke-width="1.6" stroke-linecap="round"/>
           </svg>
         </button>
 
-        <h1 class="visually-hidden">VTU Assistant</h1>
+        <h1 class="visually-hidden">Acadexa — VTU Assistant</h1>
 
         <div class="topbar__context">
           <!-- Always-visible active context (FR-CTX-01 / UI-02). -->
@@ -96,13 +188,13 @@
         <button class="btn btn--icon" type="button" id="theme-toggle"
                 aria-label="Switch to light mode">
           <svg class="btn__icon" id="theme-icon-sun" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <circle cx="8" cy="8" r="3.25" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="8" cy="8" r="3.25" fill="none" stroke="currentColor" stroke-width="1.6"/>
             <path d="M8 1v1.7M8 13.3V15M1 8h1.7M13.3 8H15M3.05 3.05l1.2 1.2M11.75 11.75l1.2 1.2M12.95 3.05l-1.2 1.2M4.25 11.75l-1.2 1.2"
-                  fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
           </svg>
           <svg class="btn__icon" id="theme-icon-moon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" hidden>
             <path d="M13.5 9.9A5.75 5.75 0 0 1 6.1 2.5a5.75 5.75 0 1 0 7.4 7.4z"
-                  fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
           </svg>
         </button>
       </div>
@@ -113,14 +205,24 @@
           <!-- Rendered conversation, shown in the answered state. -->
           <div id="message-list"></div>
 
-          <!-- ---------- State: empty ---------- -->
+          <!-- ---------- State: empty (welcome screen) ---------- -->
           <section class="state state--centered" id="state-empty" aria-labelledby="empty-title">
-            <h2 class="state__title" id="empty-title">Ask about your syllabus</h2>
-            <p class="state__lead">
-              Answers are taken only from indexed university documents, and every
-              factual claim shows the document and original PDF page behind it.
+            <p class="build-badge">
+              <span class="build-badge__dot" aria-hidden="true"></span>
+              Preview build — no documents indexed yet
             </p>
-            <div class="prompt-grid" id="prompt-grid"></div>
+            <h2 class="state__title" id="empty-title">Your VTU academic assistant</h2>
+            <p class="state__lead">
+              Find syllabus information and university circulars without reading
+              long PDFs. Ask a question, and every answer shows the document and
+              the original page it came from.
+            </p>
+            <p class="state__note">
+              This build is a frontend preview: answers are placeholder text until
+              the document index is connected, so nothing here is a VTU fact.
+            </p>
+            <h3 class="prompt-grid__title" id="prompt-grid-title">Example questions</h3>
+            <div class="prompt-grid" id="prompt-grid" aria-labelledby="prompt-grid-title"></div>
           </section>
 
           <!-- ---------- State: loading ---------- -->
@@ -146,12 +248,12 @@
                 <circle cx="10" cy="14" r="1" fill="currentColor"/>
               </svg>
               <div>
-                <h2 class="notice__title" id="error-title">The request could not be completed</h2>
+                <h3 class="notice__title" id="error-title">The request could not be completed</h3>
                 <p class="notice__body" id="error-body">
                   Something went wrong while preparing the answer. Your question has
                   not been answered, and no answer has been guessed in its place.
                 </p>
-                <div class="state__actions" style="justify-content: flex-start;">
+                <div class="state__actions state__actions--start">
                   <button class="btn" type="button" id="error-retry">Try again</button>
                 </div>
               </div>
@@ -166,7 +268,7 @@
                 <path d="M10 9v5M10 6.5v.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
               </svg>
               <div>
-                <h2 class="notice__title" id="context-missing-title">Which context should this answer use?</h2>
+                <h3 class="notice__title" id="context-missing-title">Which context should this answer use?</h3>
                 <p class="notice__body">
                   The answer could differ between schemes, branches, and semesters, so
                   the assistant will not guess. Choose a value and the question will
@@ -174,7 +276,7 @@
                 </p>
                 <!-- Filled by app.js with the specific fields that are unset. -->
                 <p class="notice__body" id="context-missing-fields" hidden></p>
-                <div class="state__actions" style="justify-content: flex-start;">
+                <div class="state__actions state__actions--start">
                   <button class="btn btn--primary" type="button" id="context-missing-open">
                     Choose academic context
                   </button>
@@ -191,7 +293,7 @@
                 <path d="M8 11h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
               </svg>
               <div>
-                <h2 class="notice__title" id="no-evidence-title">Not available in the indexed material</h2>
+                <h3 class="notice__title" id="no-evidence-title">Not available in the indexed material</h3>
                 <p class="notice__body" id="no-evidence-body">
                   Nothing in the documents indexed for the selected context answers
                   this question. Rather than guess, the assistant has not answered it.
@@ -208,6 +310,63 @@
             </div>
           </section>
 
+          <!-- ---------- View: Syllabus ----------
+               A real section with a real active state, and an explicit
+               statement that it is empty because ingestion is not connected.
+               Nothing is invented to make the list look populated. -->
+          <section class="state state--view" id="view-syllabus" aria-labelledby="view-syllabus-title" hidden>
+            <p class="state__eyebrow">Syllabus</p>
+            <h2 class="state__title" id="view-syllabus-title">Indexed syllabus documents</h2>
+            <p class="state__lead">
+              This section lists the syllabus documents indexed for the selected
+              scheme, branch, and semester, with the page each module starts on.
+            </p>
+            <div class="notice notice--context" role="group" aria-labelledby="view-syllabus-notice">
+              <svg class="notice__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.75"/>
+                <path d="M10 9v5M10 6.5v.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+              </svg>
+              <div>
+                <h3 class="notice__title" id="view-syllabus-notice">No syllabus documents are indexed yet</h3>
+                <p class="notice__body">
+                  PDF ingestion is not connected, so there is no document to list.
+                  The space has been left empty rather than filled with samples
+                  that could be mistaken for real syllabus content.
+                </p>
+                <div class="state__actions state__actions--start">
+                  <button class="btn btn--primary" type="button" data-goto-view="chat">Ask a question instead</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ---------- View: Circulars ---------- -->
+          <section class="state state--view" id="view-circulars" aria-labelledby="view-circulars-title" hidden>
+            <p class="state__eyebrow">Circulars</p>
+            <h2 class="state__title" id="view-circulars-title">University circulars and notifications</h2>
+            <p class="state__lead">
+              This section lists circulars indexed for the selected context, with
+              the date each was issued and the original page it appears on.
+            </p>
+            <div class="notice notice--context" role="group" aria-labelledby="view-circulars-notice">
+              <svg class="notice__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.75"/>
+                <path d="M10 9v5M10 6.5v.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+              </svg>
+              <div>
+                <h3 class="notice__title" id="view-circulars-notice">No circulars are indexed yet</h3>
+                <p class="notice__body">
+                  No circular has been ingested, so no notice dates or titles are
+                  shown. Inventing a circular reference would be worse than showing
+                  nothing.
+                </p>
+                <div class="state__actions state__actions--start">
+                  <button class="btn btn--primary" type="button" data-goto-view="chat">Ask a question instead</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
         </div>
       </main>
 
@@ -219,7 +378,7 @@
           <button class="btn btn--primary composer__send" type="submit" id="composer-send"
                   aria-label="Send question">
             <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-              <path d="M8 13V4M4 8l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.75"
+              <path d="M8 13V4M4 8l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.6"
                     stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
@@ -242,7 +401,8 @@
         <button class="btn btn--icon" type="button" id="citation-panel-close"
                 aria-label="Close source panel">
           <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor"
+                  stroke-width="1.6" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
@@ -271,10 +431,10 @@
             <dl>
               <dt>Document</dt>
               <dd id="citation-fallback-document"></dd>
-              <dt>Version</dt>
-              <dd id="citation-fallback-version"></dd>
               <dt>Type</dt>
               <dd id="citation-fallback-type"></dd>
+              <dt>Version</dt>
+              <dd id="citation-fallback-version"></dd>
               <dt>Context</dt>
               <dd id="citation-fallback-context"></dd>
               <dt>Page</dt>
@@ -289,8 +449,8 @@
              link can never point at a placeholder destination. -->
         <a class="btn" id="citation-open-source" target="_blank" rel="noopener noreferrer">
           <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M7 3H3v10h10V9" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-            <path d="M9.5 2.5H13.5V6.5M13.5 2.5L7.5 8.5" fill="none" stroke="currentColor" stroke-width="1.75"
+            <path d="M7 3H3v10h10V9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M9.5 2.5H13.5V6.5M13.5 2.5L7.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"
                   stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Open at official source
@@ -320,6 +480,18 @@
     <article class="message">
       <p class="message__role"></p>
       <div class="message__body"></div>
+      <!-- Copy is offered on assistant messages only; app.js reveals it. -->
+      <div class="message__tools" hidden>
+        <button class="btn btn--ghost message__copy" type="button">
+          <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <rect x="5.75" y="5.75" width="7.75" height="7.75" rx="1.6"
+                  fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M10.25 5.75V4.1a1.6 1.6 0 0 0-1.6-1.6H4.1a1.6 1.6 0 0 0-1.6 1.6v4.55a1.6 1.6 0 0 0 1.6 1.6h1.65"
+                  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <span class="message__copy-label">Copy answer</span>
+        </button>
+      </div>
     </article>
   </template>
 
@@ -327,6 +499,7 @@
     <li>
       <button class="citation-chip" type="button">
         <span class="citation-chip__doc"></span>
+        <span class="citation-chip__type"></span>
         <span class="citation-chip__page"></span>
       </button>
     </li>
@@ -341,6 +514,15 @@
       <span class="prompt-card__label"></span>
       <span class="prompt-card__meta"></span>
     </button>
+  </template>
+
+  <template id="tpl-recent-item">
+    <li>
+      <button class="recent__item" type="button">
+        <span class="recent__label"></span>
+        <span class="recent__meta"></span>
+      </button>
+    </li>
   </template>
 
   <!-- Load order matters: fixtures, then the data seam, then the interface. -->

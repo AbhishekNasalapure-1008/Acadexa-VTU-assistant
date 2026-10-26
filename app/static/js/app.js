@@ -39,6 +39,10 @@
   var el = {};
   var ui = {
     state: 'empty',
+    /* Which sidebar section is selected: 'chat', 'syllabus', or 'circulars'.
+       There is no routing, so the current section is interface state and not
+       part of the URL. */
+    view: 'chat',
     busy: false,
     /* The question that is waiting for academic context, so it can be asked
        again automatically once a value is chosen. */
@@ -51,8 +55,16 @@
     /* citation_id -> citation record for the answer on screen */
     sourceById: {},
     /* The control that opened the panel, so focus can return to it. */
-    panelTrigger: null
+    panelTrigger: null,
+    /* Questions asked in this session, newest first. This is real session
+       state: nothing is remembered between sessions and nothing is invented
+       to fill the list. */
+    recent: []
   };
+
+  /* How many questions the Recent list keeps. Older ones drop off, so the
+     sidebar cannot grow without limit during a long session. */
+  var RECENT_LIMIT = 6;
 
   /* ------------------------------------------------------------------------
      Small helpers
@@ -142,24 +154,89 @@
     return window.matchMedia('(max-width: 1279px)').matches;
   }
 
+  /* The selected context as a short line, used as the second line of a Recent
+     entry so the context a question was asked under stays visible. It states
+     plainly when nothing is selected rather than implying a default. */
+  function contextMeta() {
+    var context = readContext();
+    var parts = [];
+    if (context.scheme) { parts.push(context.scheme + ' scheme'); }
+    if (context.branch) { parts.push(context.branch); }
+    if (context.semester) { parts.push('Semester ' + context.semester); }
+    return parts.length > 0 ? parts.join(' \u00b7 ') : 'No context selected';
+  }
+
   /* ------------------------------------------------------------------------
      State machine
+     ------------------------------------------------------------------------
+     Two independent things decide what is on screen:
+
+       ui.state — which interface state the conversation column is in
+                  (empty, loading, error, missing context, no evidence, or
+                  the answered conversation)
+       ui.view  — which section is selected in the sidebar (Chat, Syllabus,
+                  Circulars)
+
+     Both are drawn by renderVisibility() alone, so there is one place that
+     decides what is visible and the two can never disagree with each other.
      ------------------------------------------------------------------------ */
 
   function setState(name) {
     ui.state = name;
+    renderVisibility();
+  }
+
+  function setView(name) {
+    ui.view = (name === 'syllabus' || name === 'circulars') ? name : 'chat';
+    syncNav();
+    renderVisibility();
+  }
+
+  function renderVisibility() {
+    var chat = ui.view === 'chat';
+
     Object.keys(STATE_ELEMENTS).forEach(function (key) {
       var node = byId(STATE_ELEMENTS[key]);
-      if (node) { node.hidden = key !== name; }
+      if (!node) { return; }
+      node.hidden = !chat || key !== ui.state;
     });
-    /* The transcript is not a state: it stays visible underneath whatever is
-       happening below it, so asking a second question never blanks the first
-       answer. Only its emptiness hides it. */
+
+    el.viewSyllabus.hidden = ui.view !== 'syllabus';
+    el.viewCirculars.hidden = ui.view !== 'circulars';
+
     syncMessageList();
   }
 
   function syncMessageList() {
-    el.messageList.hidden = el.messageList.childElementCount === 0;
+    /* The transcript is not a state: it stays visible underneath whatever is
+       happening below it, so asking a second question never blanks the first
+       answer. Only its emptiness hides it, and it belongs to the chat view. */
+    el.messageList.hidden = ui.view !== 'chat' || el.messageList.childElementCount === 0;
+  }
+
+  /* The three sections, paired with the buttons that select them. Built on
+     demand rather than cached at load, because the elements are looked up
+     after cache() has run. */
+  function navItems() {
+    return [
+      { view: 'chat', node: el.navChat },
+      { view: 'syllabus', node: el.navSyllabus },
+      { view: 'circulars', node: el.navCirculars }
+    ];
+  }
+
+  function syncNav() {
+    navItems().forEach(function (item) {
+      var active = ui.view === item.view;
+      item.node.classList.toggle('is-active', active);
+      /* aria-current is removed as well as added, so exactly one section is
+         ever current and a stale value is never left behind. */
+      if (active) {
+        item.node.setAttribute('aria-current', 'page');
+      } else {
+        item.node.removeAttribute('aria-current');
+      }
+    });
   }
 
   function syncComposer() {
@@ -245,6 +322,9 @@
     /* The visible icon matches the name: sun means "go to light". */
     el.themeIconSun.hidden = !toLight;
     el.themeIconMoon.hidden = toLight;
+    /* The profile popover reports the theme as a fact about this build, so it
+       is kept in step with the attribute rather than left stating "Dark". */
+    el.popoverTheme.textContent = toLight ? 'Dark' : 'Light';
   }
 
   function applyTheme(theme) {
@@ -453,11 +533,18 @@
       var item = el.tplChip.content.firstElementChild.cloneNode(true);
       var button = item.querySelector('.citation-chip');
       var page = pageLabel(citation);
+      /* The type is shown only when the source records one. An unrecorded type
+         is left blank rather than filled with a guess. */
+      var type = citation.document_type ? capitalise(citation.document_type) : '';
 
       item.querySelector('.citation-chip__doc').textContent = citation.title;
+      item.querySelector('.citation-chip__type').textContent = type;
       item.querySelector('.citation-chip__page').textContent = page;
       button.setAttribute('data-citation-id', citation.citation_id);
-      button.setAttribute('aria-label', 'Open source: ' + citation.title + ', ' + page);
+      button.setAttribute(
+        'aria-label',
+        'Open source: ' + citation.title + (type ? ', ' + type : '') + ', ' + page
+      );
       list.appendChild(item);
     });
 
@@ -491,7 +578,7 @@
       ui.sourceIndex[citation.citation_id] = position + 1;
     });
 
-    appendMessage('Assistant', 'message--assistant', function (body) {
+    var node = appendMessage('Assistant', 'message--assistant', function (body) {
       var answerBody = document.createElement('div');
       answerBody.className = 'answer';
       (answer.blocks || []).forEach(function (block) {
@@ -502,6 +589,94 @@
         answerBody.appendChild(renderSources(sources));
       }
       body.appendChild(answerBody);
+    });
+
+    attachCopy(node, answer);
+  }
+
+  /* Copying is offered only where the Clipboard API exists, which means a
+     secure context (https or localhost). Elsewhere the control stays hidden
+     rather than being shown and then failing. */
+  function canCopy() {
+    return !!(window.navigator && navigator.clipboard &&
+      typeof navigator.clipboard.writeText === 'function');
+  }
+
+  /* The copied text is built from the same structured blocks that produced the
+     answer, not read back out of the rendered page: app.js never scrapes the
+     DOM for data. */
+  function blocksToText(blocks) {
+    var lines = [];
+    (blocks || []).forEach(function (block) {
+      if (!block) { return; }
+
+      if (block.kind === 'heading') {
+        lines.push(String(block.text || ''));
+        return;
+      }
+
+      if (block.kind === 'table') {
+        if (block.caption) { lines.push(String(block.caption)); }
+        if (block.headers) { lines.push(block.headers.join('\t')); }
+        (block.rows || []).forEach(function (row) { lines.push((row || []).join('\t')); });
+        return;
+      }
+
+      if (block.kind === 'list') {
+        (block.items || []).forEach(function (item, index) {
+          lines.push((block.ordered ? (index + 1) + '. ' : '- ') + String(item.text || ''));
+        });
+        return;
+      }
+
+      lines.push(String(block.text || ''));
+    });
+    return lines.join('\n');
+  }
+
+  function copyTextForAnswer(answer) {
+    var parts = [blocksToText(answer.blocks)];
+    var sources = answer.sources || [];
+
+    if (sources.length > 0) {
+      parts.push('');
+      parts.push('Sources used');
+      sources.forEach(function (citation, index) {
+        parts.push(
+          '[' + (index + 1) + '] ' + citation.title +
+          (citation.document_type ? '. ' + capitalise(citation.document_type) : '') +
+          '. ' + pageLabel(citation) + '.'
+        );
+      });
+    }
+
+    return parts.join('\n');
+  }
+
+  function attachCopy(node, answer) {
+    var tools = node.querySelector('.message__tools');
+    var button = node.querySelector('.message__copy');
+    if (!tools || !button || !canCopy()) { return; }
+
+    var text = copyTextForAnswer(answer);
+    if (text.trim() === '') { return; }
+
+    tools.hidden = false;
+    button.addEventListener('click', function () {
+      var label = button.querySelector('.message__copy-label');
+      navigator.clipboard.writeText(text).then(function () {
+        button.classList.add('is-copied');
+        if (label) { label.textContent = 'Copied'; }
+        announce('Answer copied to the clipboard.');
+        window.setTimeout(function () {
+          button.classList.remove('is-copied');
+          if (label) { label.textContent = 'Copy answer'; }
+        }, 2000);
+      }).catch(function () {
+        /* A refused clipboard is not an error state for the conversation: the
+           answer is still on screen and can be selected by hand. */
+        announce('The answer could not be copied. Select the text instead.');
+      });
     });
   }
 
@@ -519,6 +694,43 @@
     syncComposer();
   }
 
+  /* New chat / Clear conversation.
+     The transcript, the question held back for missing context, the last
+     question, and the source maps are all cleared. Dropping the source maps
+     matters: otherwise "Try again" could re-ask the previous conversation's
+     question, and a stale citation marker could still resolve to a record
+     that is no longer on screen.
+
+     The Recent list is deliberately kept. It is the session's record of which
+     questions have been asked, not part of the transcript, and emptying it
+     would mean retyping a question the sidebar is still offering to repeat.
+     Nothing in it is invented: it only ever lists questions the user typed. */
+  function startNewChat() {
+    /* A new chat is a chat action, so the workspace returns to Chat first. */
+    setView('chat');
+
+    el.messageList.textContent = '';
+    ui.pendingQuestion = null;
+    ui.lastQuestion = null;
+    ui.sourceIndex = {};
+    ui.sourceById = {};
+
+    el.contextMissingFields.textContent = '';
+    el.contextMissingFields.hidden = true;
+
+    /* Closes the source panel and returns focus to the composer, so the panel
+       can never outlive the answer its citation belonged to. */
+    ui.panelTrigger = null;
+    closeCitation();
+
+    clearComposer();
+    renderRecent();
+    setState('empty');
+
+    el.composerInput.focus();
+    announce('New chat started.');
+  }
+
   /* Returns true when the question was accepted. Callers use that to decide
      whether to clear the composer, so a question typed while a request is in
      flight is never silently discarded. */
@@ -526,9 +738,16 @@
     var text = String(question || '').trim();
     if (text === '' || ui.busy) { return false; }
 
+    /* Asking is a chat action, so a question typed while browsing Syllabus or
+       Circulars brings the conversation back rather than answering into a
+       hidden column. */
+    setView('chat');
+
     if (appendUserMessage !== false) { renderUserMessage(text); }
 
     ui.lastQuestion = text;
+    recordRecent(text);
+
     ui.busy = true;
     syncComposer();
     setState('loading');
@@ -727,6 +946,87 @@
   }
 
   /* ------------------------------------------------------------------------
+     Recent questions
+     ------------------------------------------------------------------------
+     The list is built from what was asked in this session. It is not loaded
+     history: there is no persistence, so an empty list on a fresh page is the
+     honest result and the empty message says so.
+
+     Each entry also records the context the question was asked under, so a
+     question asked with no context selected is not presented later as though
+     it had one.
+     ------------------------------------------------------------------------ */
+
+  function recordRecent(question) {
+    var text = String(question || '').trim();
+    if (text === '') { return; }
+
+    /* Asking the same question twice moves it up rather than repeating it. */
+    ui.recent = ui.recent.filter(function (entry) { return entry.question !== text; });
+    ui.recent.unshift({ question: text, context: contextMeta() });
+
+    if (ui.recent.length > RECENT_LIMIT) {
+      ui.recent.length = RECENT_LIMIT;
+    }
+
+    renderRecent();
+  }
+
+  function renderRecent() {
+    el.recentList.textContent = '';
+    el.recentEmpty.hidden = ui.recent.length > 0;
+
+    ui.recent.forEach(function (entry) {
+      var item = el.tplRecent.content.firstElementChild.cloneNode(true);
+      var button = item.querySelector('.recent__item');
+      var active = ui.lastQuestion !== null && entry.question === ui.lastQuestion;
+
+      button.querySelector('.recent__label').textContent = entry.question;
+      button.querySelector('.recent__meta').textContent = entry.context;
+      button.setAttribute('data-recent-question', entry.question);
+      button.classList.toggle('is-active', active);
+      if (active) {
+        button.setAttribute('aria-current', 'true');
+      }
+
+      el.recentList.appendChild(item);
+    });
+  }
+
+  /* ------------------------------------------------------------------------
+     Profile popover
+     ------------------------------------------------------------------------
+     An inline disclosure, so Escape closes it and it never traps focus. What
+     it reports is a statement of fact about this build, not a signed-in user:
+     there is no account, no storage, and no document index.
+     ------------------------------------------------------------------------ */
+
+  function syncProfilePopover() {
+    el.profileBtn.setAttribute(
+      'aria-expanded',
+      el.profilePopover.hidden ? 'false' : 'true'
+    );
+  }
+
+  function openProfilePopover() {
+    el.profilePopover.hidden = false;
+    syncProfilePopover();
+  }
+
+  function closeProfilePopover() {
+    el.profilePopover.hidden = true;
+    syncProfilePopover();
+  }
+
+  function toggleProfilePopover() {
+    if (el.profilePopover.hidden) {
+      openProfilePopover();
+    } else {
+      closeProfilePopover();
+    }
+  }
+
+  /* ------------------------------------------------------------------------
      Composer
      ------------------------------------------------------------------------ */
 
@@ -762,6 +1062,15 @@
     el.app = byId('app');
     el.sidebarToggle = byId('sidebar-toggle');
     el.newChat = byId('new-chat-btn');
+    el.navChat = byId('nav-chat');
+    el.navSyllabus = byId('nav-syllabus');
+    el.navCirculars = byId('nav-circulars');
+    el.recentList = byId('recent-list');
+    el.recentEmpty = byId('recent-empty');
+    el.profileBtn = byId('profile-btn');
+    el.profilePopover = byId('profile-popover');
+    el.profileClear = byId('profile-clear');
+    el.popoverTheme = byId('popover-theme-state');
     el.contextSummary = byId('context-summary');
     el.contextSummaryText = byId('context-summary-text');
     el.themeToggle = byId('theme-toggle');
@@ -775,6 +1084,8 @@
     el.contextMissingFields = byId('context-missing-fields');
     el.noEvidenceBody = byId('no-evidence-body');
     el.promptGrid = byId('prompt-grid');
+    el.viewSyllabus = byId('view-syllabus');
+    el.viewCirculars = byId('view-circulars');
     el.composer = byId('composer');
     el.composerInput = byId('composer-input');
     el.composerSend = byId('composer-send');
@@ -799,6 +1110,7 @@
     el.tplChip = byId('tpl-citation-chip');
     el.tplRef = byId('tpl-citation-ref');
     el.tplPrompt = byId('tpl-prompt-card');
+    el.tplRecent = byId('tpl-recent-item');
   }
 
   function bindEvents() {
@@ -823,17 +1135,62 @@
       byId(CONTEXT_SELECTS[key]).addEventListener('change', onContextChange);
     });
 
-    el.newChat.addEventListener('click', function () {
-      el.messageList.textContent = '';
-      syncMessageList();
-      ui.pendingQuestion = null;
-      ui.lastQuestion = null;
-      ui.sourceIndex = {};
-      ui.sourceById = {};
-      closeCitation();
-      setState('empty');
+    el.newChat.addEventListener('click', startNewChat);
+
+    /* Section navigation. Selecting Syllabus or Circulars is a real, visible
+       change of section with no invented content behind it. */
+    navItems().forEach(function (item) {
+      item.node.addEventListener('click', function () {
+        setView(item.view);
+        announce(item.view === 'chat'
+          ? 'Chat workspace.'
+          : (item.view === 'syllabus' ? 'Syllabus section.' : 'Circulars section.'));
+
+        /* On a phone the sidebar is a drawer that would cover whichever
+           section was just selected, so it closes for every section rather
+           than only the two that replace the conversation. */
+        if (isNarrowLayout()) {
+          closeSidebar();
+          el.sidebarToggle.focus();
+        }
+      });
+    });
+
+    /* The "Ask a question instead" buttons inside the Syllabus and Circulars
+       views. Delegated from the conversation column so both views (and any
+       added later) are covered by one handler. */
+    el.conversation.addEventListener('click', function (event) {
+      var trigger = event.target.closest('[data-goto-view]');
+      if (!trigger) { return; }
+      setView(trigger.getAttribute('data-goto-view'));
       el.composerInput.focus();
-      announce('New chat started.');
+    });
+
+    /* A recent question is asked through exactly the same path as a typed one,
+       so it cannot behave differently from one. */
+    el.recentList.addEventListener('click', function (event) {
+      var trigger = event.target.closest('[data-recent-question]');
+      if (!trigger) { return; }
+      if (runQuestion(trigger.getAttribute('data-recent-question'), true)) {
+        clearComposer();
+      }
+      if (isNarrowLayout()) { closeSidebar(); }
+    });
+
+    el.profileBtn.addEventListener('click', toggleProfilePopover);
+
+    el.profileClear.addEventListener('click', function () {
+      closeProfilePopover();
+      startNewChat();
+    });
+
+    /* A click anywhere outside the disclosure closes it. The button itself is
+       excluded, because its own handler has already decided the new state. */
+    document.addEventListener('click', function (event) {
+      if (el.profilePopover.hidden) { return; }
+      if (el.profilePopover.contains(event.target)) { return; }
+      if (el.profileBtn.contains(event.target)) { return; }
+      closeProfilePopover();
     });
 
     el.composer.addEventListener('submit', function (event) {
@@ -876,10 +1233,15 @@
       }
     });
 
+    /* Escape closes the surface that is on top, innermost first: the source
+       panel, then the profile disclosure, then the narrow-screen drawer. */
     document.addEventListener('keydown', function (event) {
       if (event.key !== 'Escape') { return; }
       if (!el.panel.hidden) {
         closeCitation();
+      } else if (!el.profilePopover.hidden) {
+        closeProfilePopover();
+        el.profileBtn.focus();
       } else if (el.app.classList.contains('is-sidebar-open')) {
         closeSidebar();
         el.sidebarToggle.focus();
@@ -919,6 +1281,12 @@
     }
 
     bindEvents();
+    /* The new surfaces are synced from state rather than trusted to match the
+       markup, so the attribute values the markup ships with and the values at
+       run time cannot drift apart. */
+    syncNav();
+    renderRecent();
+    syncProfilePopover();
     setState('empty');
     syncSidebarAria();
     syncScrim();

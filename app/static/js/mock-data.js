@@ -49,29 +49,38 @@
       ]
     },
 
-    /* Suggested prompts for the empty state. Later these are drawn from the
-       indexed material for the selected context (UI-04) rather than being
-       fixed strings. */
+    /* Example questions for the empty state. Selecting one asks it through
+       exactly the same path as a typed question, so the welcome screen cannot
+       behave differently from the composer.
+
+       These are interface strings from the design brief, not answers: asking
+       one returns the same placeholder answer text as any other question, so
+       nothing here states a VTU fact. They name a branch and a semester
+       because that is what a student would actually type, and the question is
+       then held for the academic context rather than answered from a guess.
+
+       Later these are drawn from the indexed material for the selected
+       context (UI-04) rather than being fixed strings. */
     suggestedPrompts: [
       {
-        label: 'What does Module 3 of this subject cover?',
-        meta: 'Syllabus content',
-        question: 'What does Module 3 of this subject cover?'
+        label: 'Show me the CSE 3rd semester syllabus',
+        meta: 'Syllabus by branch and semester',
+        question: 'Show me the CSE 3rd semester syllabus'
       },
       {
-        label: 'How many credits does this subject carry?',
-        meta: 'Credits and structure',
-        question: 'How many credits does this subject carry?'
+        label: 'Find circulars about examination registration',
+        meta: 'Circulars and notifications',
+        question: 'Find circulars about examination registration'
       },
       {
-        label: 'Which practical work is listed for the subject?',
-        meta: 'Labs and practicals',
-        question: 'Which practical work is listed for the subject?'
+        label: 'Explain a subject from my syllabus',
+        meta: 'Subject explanation',
+        question: 'Explain a subject from my syllabus'
       },
       {
-        label: 'What is the pass requirement in this regulation?',
-        meta: 'Examination rules',
-        question: 'What is the pass requirement in this regulation?'
+        label: 'Find the source of a VTU academic notification',
+        meta: 'Citation and original page',
+        question: 'Find the source of a VTU academic notification'
       }
     ],
 

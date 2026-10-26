@@ -39,19 +39,6 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 
-try:  # PyMuPDF 1.24+ exposes the package as ``pymupdf``.
-    import pymupdf as fitz
-except ImportError:  # older releases expose only the legacy ``fitz`` name
-    try:
-        import fitz
-    except ImportError as exc:  # pragma: no cover - depends on environment
-        raise ImportError(
-            "PyMuPDF is required for PDF extraction but is not installed in "
-            "this Python environment. Install it with: "
-            "python -m pip install PyMuPDF"
-        ) from exc
-
-
 #: Page outcome: the page yielded machine-readable text.
 PAGE_TEXT = "text"
 
@@ -81,6 +68,31 @@ __all__ = [
     "classify_page_outcome",
     "extract_pdf",
 ]
+
+
+def _require_pymupdf():
+    """Import PyMuPDF, or raise an error naming exactly what is missing.
+
+    The import is deferred to the moment a PDF is actually extracted. Nothing
+    else in this module needs PyMuPDF: the page-outcome constants, the value
+    objects and :func:`classify_page_outcome` are plain Python. Deferring the
+    import is what lets the chunking, canonical, indexing and retrieval stages
+    import this module in an interpreter that has no PDF toolkit — only calling
+    :func:`extract_pdf` there fails, with a message that says which interpreter
+    is missing the package.
+    """
+    try:  # PyMuPDF 1.24+ exposes the package as ``pymupdf``.
+        import pymupdf as fitz
+    except ImportError:  # older releases expose only the legacy ``fitz`` name
+        try:
+            import fitz
+        except ImportError as exc:  # pragma: no cover - depends on environment
+            raise ImportError(
+                "PyMuPDF is required for PDF extraction but is not installed in "
+                "this Python environment. Install it with: "
+                "python -m pip install PyMuPDF"
+            ) from exc
+    return fitz
 
 
 class PdfExtractionError(Exception):
@@ -207,7 +219,11 @@ def extract_pdf(path: str | os.PathLike[str]) -> ExtractionResult:
     original one-based number. Raises :class:`PdfExtractionError` if the
     path is missing, is not a file, cannot be read, is encrypted, or is not
     a parsable PDF. A broken input never produces a successful empty result.
+
+    Raises ``ImportError`` if PyMuPDF is not installed in the running
+    interpreter; that is the only operation in this module that needs it.
     """
+    fitz = _require_pymupdf()
     source_path = os.fspath(path)
     display_path = os.path.abspath(source_path)
 

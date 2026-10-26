@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "index_type": "IndexFlatIP",
+  "metric": "inner_product",
+  "metric_description": "inner product; vectors are L2-normalised, so this is cosine similarity",
+  "dimension": 384,
+  "vector_count": 655,
+  "embedding": {
+    "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimension": 384,
+    "normalize": true,
+    "batch_size": 32
+  },
+  "chunker": {
+    "target_tokens": 500,
+    "overlap_tokens": 75,
+    "chars_per_token": 4,
+    "target_chars": 2000,
+    "overlap_chars": 300
+  },
+  "canonical": {
+    "schema_version": 1,
+    "document_count": 5,
+    "chunk_count": 655,
+    "chunks_sha256": "ce8fbf1dbc88724548f249eb0d5b307e3fde048b9f5e0205b8af0e5246fca111"
+  },
+  "documents": [
+    {
+      "key": "2022-cse-3rd",
+      "document_id": "vtu-2022-scheme-sem3-syllabus",
+      "version_id": "398ab7aa7db60e1e",
+      "filename": "3rd_sem_syllabi.pdf",
+      "source_relative_path": "Syllabus/2022-scheme/3rd_sem_syllabi.pdf",
+      "document_type": "syllabus",
+      "scheme": "2022",
+      "semester": "3",
+      "branch": null,
+      "page_count": 88,
+      "text_pages": 88,
+      "non_text_pages": 0,
+      "chunk_count": 245
+    },
+    {
+      "key": "2022-cse-5th",
+      "document_id": "vtu-2022-scheme-sem5-syllabus",
+      "version_id": "6c06b07dc90dfe14",
+      "filename": "5th_sem_syllabi.pdf",
+      "source_relative_path": "Syllabus/2022-scheme/5th_sem_syllabi.pdf",
+      "document_type": "syllabus",
+      "scheme": "2022",
+      "semester": "5",
+      "branch": null,
+      "page_count": 33,
+      "text_pages": 33,
+      "non_text_pages": 0,
+      "chunk_count": 95
+    },
+    {
+      "key": "2025-cse-3rd",
+      "document_id": "vtu-2025-scheme-sem3-syllabus",
+      "version_id": "86437482987bbf10",
+      "filename": "3rd_sem_syllabi.pdf",
+      "source_relative_path": "Syllabus/2025-scheme/3rd_sem_syllabi.pdf",
+      "document_type": "syllabus",
+      "scheme": "2025",
+      "semester": "3",
+      "branch": null,
+      "page_count": 59,
+      "text_pages": 59,
+      "non_text_pages": 0,
+      "chunk_count": 135
+    },
+    {
+      "key": "2022-regulations",
+      "document_id": "vtu-2022-regulations-be-btech",
+      "version_id": "25df541313cd207e",
+      "filename": "Regulations-Clr-BE-BTECH-2022-611-02052023.pdf",
+      "source_relative_path": "Regulations/Regulations-Clr-BE-BTECH-2022-611-02052023.pdf",
+      "document_type": "regulation",
+      "scheme": null,
+      "semester": null,
+      "branch": null,
+      "page_count": 65,
+      "text_pages": 65,
+      "non_text_pages": 0,
+      "chunk_count": 107
+    },
+    {
+      "key": "2025-regulations",
+      "document_id": "vtu-2025-regulations-be-btech",
+      "version_id": "7969bb7d2b8269f3",
+      "filename": "B.E.B.Tech2025.pdf",
+      "source_relative_path": "Regulations/B.E.B.Tech2025.pdf",
+      "document_type": "regulation",
+      "scheme": null,
+      "semester": null,
+      "branch": null,
+      "page_count": 41,
+      "text_pages": 41,
+      "non_text_pages": 0,
+      "chunk_count": 73
+    }
+  ],
+  "entries_sha256": "f6f443fbb7333f5da1951fca33a70abb9738610e9002cb15599ad14b29f227a5"
+}

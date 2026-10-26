@@ -1,8 +1,15 @@
 /* ==========================================================================
    VTU Assistant — layout and components
    --------------------------------------------------------------------------
-   Step 1 scope: static interface shell only. No backend, no data fetching,
-   no animation library. All colours come from tokens.css.
+   Scope: the interface shell and its components. No backend, no data
+   fetching, no animation library. Every colour, size, radius, and duration is
+   a token from tokens.css, so the light and dark themes are produced by the
+   same rules rather than by a second stylesheet.
+
+   Layout: a sidebar (identity, new chat, section navigation, recent
+   questions, academic context, profile disclosure) beside a main column
+   (topbar, conversation, composer), with a citation side panel that docks
+   beside the conversation on wide screens and overlays it below 1280px.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -130,7 +137,7 @@ textarea {
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   min-width: 0;
   padding: var(--space-4);
   background: var(--surface);
@@ -142,32 +149,135 @@ textarea {
   display: none;
 }
 
+/* ---- Identity ---- */
+
 .brand {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-1) var(--space-2) var(--space-3);
+  padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--border);
 }
 
-.brand__mark {
+/* The mark sits on its own tile, so the identity reads as a logo rather than
+   as an icon beside some text. */
+.brand__mark-wrap {
   flex: none;
-  width: 30px;
-  height: 30px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
   color: var(--accent-text);
+}
+
+.brand__mark {
+  width: 20px;
+  height: 20px;
+  color: inherit;
+}
+
+.brand__text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
 }
 
 .brand__name {
   font-size: var(--text-lg);
   font-weight: 600;
   letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 .brand__tagline {
-  display: block;
   font-size: var(--text-xs);
   font-weight: 400;
   color: var(--text-3);
+}
+
+/* ---- Section navigation ---- */
+
+.nav__list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
+}
+
+.nav__item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* The selected section is marked by a filled surface, a stronger border, a
+   bolder label, and an accent icon as well as aria-current, so the state is
+   never carried by colour alone. */
+.nav__item.is-active {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.nav__icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--text-3);
+}
+
+.nav__item:hover .nav__icon,
+.nav__item.is-active .nav__icon {
+  color: var(--accent-text);
+}
+
+.nav__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Scrollable sidebar body ---- */
+
+/* The sidebar stack is taller than it used to be — identity, new chat,
+   sections, session history, academic context, profile — so the middle block
+   scrolls while the brand and the footer stay put. */
+.sidebar__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  gap: var(--space-5);
+  align-content: start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sidebar__section {
+  /* Grid items default to min-width: auto, which would let a long question
+     widen the sidebar instead of truncating inside its row. */
+  min-width: 0;
 }
 
 .sidebar__section-title {
@@ -179,11 +289,180 @@ textarea {
   margin-bottom: var(--space-2);
 }
 
+/* ---- Recent questions (this session only) ---- */
+
+.recent {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recent__item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
+}
+
+.recent__item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.recent__item.is-active {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--text);
+}
+
+.recent__label,
+.recent__meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent__meta {
+  font-size: var(--text-xs);
+  color: var(--text-3);
+}
+
+.recent__empty {
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+/* ---- Profile and its popover ---- */
+
 .sidebar__footer {
   margin-top: auto;
-  padding-top: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--border);
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text-2);
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.profile:hover,
+.profile[aria-expanded="true"] {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.profile__avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: var(--radius-pill);
   font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.profile__text {
+  flex: 1 1 auto;
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.profile__name {
+  font-size: var(--text-sm);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile__meta {
+  font-size: var(--text-xs);
+  color: var(--text-3);
+}
+
+.profile__chevron {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--text-3);
+  transition: transform var(--dur) var(--ease);
+}
+
+.profile[aria-expanded="true"] .profile__chevron {
+  transform: rotate(180deg);
+}
+
+/* Inline disclosure, not a floating menu: it expands inside the sidebar so it
+   cannot cover the conversation, and it never traps focus. */
+.popover {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+
+.popover__title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+
+.popover__status {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.popover__status dt {
+  color: var(--text-3);
+}
+
+.popover__status dd {
+  margin: 0;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.sidebar__disclaimer {
+  font-size: var(--text-xs);
+  line-height: 1.5;
   color: var(--text-3);
 }
 
@@ -230,6 +509,27 @@ textarea {
 
 .btn--full {
   width: 100%;
+}
+
+/* The New chat action is the primary entry point of the sidebar, so it is
+   given the height of a real target rather than the compact default. */
+.btn--lg {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+}
+
+/* A quiet action that is readable but visually subordinate to the thing it
+   belongs to. Used for "Copy answer". */
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-3);
+}
+
+.btn--ghost:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
 }
 
 .btn--icon {
@@ -407,6 +707,22 @@ textarea {
   border-radius: var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg);
 }
 
+/* Copy is offered on assistant answers only. app.js reveals this row only
+   when the Clipboard API is usable in a secure context, so the control is
+   never shown in a state where it could not work. */
+.message__tools {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.message__copy {
+  font-size: var(--text-xs);
+}
+
+.message__copy.is-copied {
+  color: var(--ok);
+}
+
 .answer > * + * {
   margin-top: var(--space-3);
 }
@@ -545,6 +861,20 @@ textarea {
   opacity: 0.85;
 }
 
+/* The document type, when the source records one. The separator is drawn by
+   CSS so it disappears on its own when no type is recorded, and the type is
+   never invented to fill the gap. */
+.citation-chip__type {
+  flex: none;
+  opacity: 0.85;
+}
+
+.citation-chip__type:not(:empty)::before {
+  content: "\00b7";
+  margin-inline-end: var(--space-2);
+  opacity: 0.7;
+}
+
 /* Inline reference marker inside answer prose, adjacent to the claim it
    supports (UI-CIT-01). */
 .citation-ref {
@@ -633,6 +963,30 @@ textarea {
   padding-top: var(--space-7);
 }
 
+/* Sits above the welcome heading, so the status of the build is read before
+   the promise. Amber rather than red or green: nothing is indexed yet, which
+   is a caution, not a failure and not a success. */
+.build-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-1) var(--space-3);
+  background: var(--cite-soft);
+  border: 1px solid var(--cite-border);
+  border-radius: var(--radius-pill);
+  color: var(--cite);
+  font-size: var(--text-xs);
+}
+
+.build-badge__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 .state__title {
   font-size: var(--text-2xl);
   margin-bottom: var(--space-3);
@@ -644,12 +998,48 @@ textarea {
   color: var(--text-2);
 }
 
+/* A quieter second paragraph under the lead, used on the welcome screen to
+   state plainly that this build answers from placeholders. */
+.state__note {
+  max-width: 52ch;
+  margin: var(--space-3) auto 0;
+  color: var(--text-3);
+  font-size: var(--text-sm);
+}
+
+/* Small label above a section title, for example "Syllabus". */
+.state__eyebrow {
+  margin-bottom: var(--space-2);
+  color: var(--accent-text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* A browse section reads like a document list, so it is left-aligned rather
+   than centred like the welcome screen. */
+.state--view {
+  text-align: start;
+}
+
+.state--view .state__lead {
+  max-width: 60ch;
+  margin-inline: 0;
+}
+
 .state__actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
   justify-content: center;
   margin-top: var(--space-4);
+}
+
+/* Inside a notice the action belongs under the text it answers, not centred
+   in the column. */
+.state__actions--start {
+  justify-content: flex-start;
 }
 
 /* Empty state: suggested academic prompts (FR-CONV-03 / UI-04). These come
@@ -663,6 +1053,17 @@ textarea {
   text-align: start;
 }
 
+/* The heading for the example questions, kept quiet so the questions
+   themselves stay the loudest thing on the welcome screen. */
+.prompt-grid__title {
+  margin-top: var(--space-6);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+
 .prompt-card {
   display: grid;
   gap: var(--space-1);
@@ -673,6 +1074,7 @@ textarea {
   color: var(--text);
   text-align: start;
   cursor: pointer;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .prompt-card:hover {

@@ -23,13 +23,18 @@ try:
         PAGE_IMAGE_ONLY,
         PAGE_TEXT,
         PdfExtractionError,
+        _require_pymupdf,
         classify_page_outcome,
         extract_pdf,
     )
 
+    # The PDF toolkit is imported on demand by the module itself, so asking it
+    # for the toolkit is what tells this suite whether these tests can run.
+    fitz = _require_pymupdf()
     _IMPORT_ERROR: Exception | None = None
 except ImportError as exc:  # PyMuPDF is not installed in the environment
     pdf_extract = None  # type: ignore[assignment]
+    fitz = None  # type: ignore[assignment]
     _IMPORT_ERROR = exc
 
 
@@ -38,7 +43,6 @@ _SKIP_REASON = f"PyMuPDF is not importable, so PDF tests cannot run: {_IMPORT_ER
 
 def _write_pdf(path: str, build) -> str:
     """Build a PDF at ``path`` using a callback that fills a new document."""
-    fitz = pdf_extract.fitz
     document = fitz.open()
     try:
         build(document)
@@ -55,7 +59,6 @@ def _add_text_page(document, text: str) -> None:
 
 def _add_image_page(document) -> None:
     """Add a page whose only content is a raster image (no text)."""
-    fitz = pdf_extract.fitz
     page = document.new_page()
     pixmap = fitz.Pixmap(fitz.csRGB, fitz.IRect(0, 0, 32, 32))
     pixmap.set_rect(pixmap.irect, (200, 30, 30))
@@ -174,7 +177,6 @@ class BadInputTests(unittest.TestCase):
             extract_pdf(path)
 
     def test_encrypted_pdf_raises_rather_than_returning_empty_text(self) -> None:
-        fitz = pdf_extract.fitz
         path = os.path.join(self.tmpdir, "encrypted.pdf")
         document = fitz.open()
         try:
@@ -267,7 +269,6 @@ class PageLevelExtractionFailureTests(unittest.TestCase):
         self.tmpdir = self._tmp.name
 
     def test_page_error_is_extraction_failure_and_keeps_page_number(self) -> None:
-        fitz = pdf_extract.fitz
         path = _write_pdf(
             os.path.join(self.tmpdir, "one-page.pdf"),
             lambda doc: _add_text_page(doc, "Text that will not be read"),
